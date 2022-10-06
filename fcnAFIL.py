@@ -367,11 +367,22 @@ def figure_vol_vs_vol(v1, v2, param,log=False):
         pend=1.02104
         x = np.linspace (0,65,66)
         y = oo + pend*x
-        plt.plot(x, y, 'b-', label='0.1%% FPR', linewidth=lw)        
+        plt.plot(x, y, 'c-', label='0.1%% FPR', linewidth=lw)        
         x = np.linspace (65,maxx,100)
         pend=1.41127
         y = pend*x
-        plt.plot(x, y, 'b-', linewidth=lw)                    
+        plt.plot(x, y, 'c-', linewidth=lw)
+
+        oo= 30
+        pend = 1.1554
+        x = np.linspace (0,65,66)
+        y = oo + pend*x
+        plt.plot(x, y, 'b-', label='0.1%% FPR', linewidth=lw)        
+        x = np.linspace (65,maxx,100)
+        pend =  1+.10282*6
+        y = pend*x
+        plt.plot(x, y, 'b-', linewidth=lw)        
+
     # plt.plot(x, x + pend2*x**(2/3), 'y-', label='~Sup', linewidth=lw)
     # plt.plot(x, x, 'k--', linewidth=lw)    
     plt.plot([0.01,maxx], [0.01,maxx], 'k--', linewidth=lw)    
@@ -386,7 +397,7 @@ def figure_vol_vs_vol(v1, v2, param,log=False):
     indexgrow =  index['grow']
     indexstable =  index['stable']
         
-    ms = 5
+    ms = 2
     jitter = lambda x: 0.0*(np.random.rand(sum(x))-.5)
     if log==True:
         v1=np.array(v1,np.float)

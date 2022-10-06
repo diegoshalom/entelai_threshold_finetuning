@@ -1,5 +1,35 @@
 import numpy as np
-   
+
+def _classify_lesions_6SD(v1, v2, thres, slope):
+    """
+    Classify lesions in grow/new and stable, according to vol1 and vol2
+    Parameters
+    ----------
+    v1, v2: lists of volumes of lesions an timepoints 1 and 2
+
+    Returns
+    -------
+    index: a dictionary of classes of lesions. Each one is a list of boolean:
+        -grow: Growing/New
+        -stable: Stable
+    """    
+    thresnew = 30
+    slopehigh = 1+.10282*6
+    slopelow =  1.1554 # La pendiente de la recta que pasa por (0,30) y (65,slopehigh*65) 
+
+    indexres = (v1 < 0) #always false
+    indexsmall = (v1 < 0) #always false
+    indexnew =  (v1 == 0) & (v2 >= thresnew)  
+    indexcor = np.bitwise_not(indexres | indexnew | indexsmall)    
+    
+    indexgrow = indexcor & (np.bitwise_and(v1<65, v2>v1*slopelow+thresnew) | np.bitwise_and(v1>=65, v2>v1*slopehigh) )
+    indexstable = indexcor & np.bitwise_not(indexgrow)
+
+    # index ={'grow': indexgrow, 'stable': indexstable}
+    index ={'res': indexres, 'new': indexnew, 'small': indexsmall,
+              'grow': indexgrow, 'stable': indexstable}    
+    return index
+
 def _classify_lesions_4tau(v1, v2, thres, slope):
     """
     Classify lesions in grow/new and stable, according to vol1 and vol2

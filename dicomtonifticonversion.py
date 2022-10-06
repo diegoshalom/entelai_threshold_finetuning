@@ -129,7 +129,7 @@ PAR = build_pairs()
 
 
 param = {"thres":np.nan, "slope":np.nan, "growtype":"largesmall_01p", \
-    'fcn_classify_lesions':lc._classify_lesions_4tau,   \
+    'fcn_classify_lesions':lc._classify_lesions_6SD,   \
         'condname':'largesmall_01p_new10'}
 
 t = time.time()
