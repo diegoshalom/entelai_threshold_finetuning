@@ -52,7 +52,7 @@ if os.environ['COMPUTERNAME']=='DIEGO-DESKTOP':
     codedir = 'E:/REPOS/entelai_threshold_finetuning/'
 else:
     datadir = 'C:/Entelai/DATA/threshold_finetuning/data completa'
-    codedir = 'C:/Users/Diego/Dropbox/_LABO/entelai'
+    codedir = 'C:/REPOS/entelai_threshold_finetuning/'
     
 outdatadir = os.path.join(datadir, 'out')
 
