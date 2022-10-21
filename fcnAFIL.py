@@ -14,8 +14,75 @@ from AFIL_to_insert_in_pipeline import calculate_volume_labels
 # import subprocess
 # import time
 
+def build_pairs_theshold_finetuning(datadir): # dataset threshold finetuning
+    '''
+    PAR: list of pairs: 
+        Each pair is a dict:
+            studiesname: patient_id
+            stidies: (chronologicaly ordered) list of (two) dict studies with 
+                        anon_id
+                        original_id
+                        patient_id
+                        study_date
+    '''
+    df = pd.read_excel(os.path.join(datadir,'false_positives_neuro_desm.xlsx'))
+    pids = np.unique(df['patient_id'])
+    PAR =[]
+    for pid in pids:
+        dfuid = df[df['patient_id']==pid].sort_values(by=['study_date'])
 
-def build_PAR_20(datadir):
+        st = []
+        for index, row in dfuid.iterrows():
+            st.append(dict(row))
+
+        par = {}
+        par['studiesname'] = str(pid)
+        par['studies'] = st
+
+        PAR.append(par)           
+
+    for i,par in enumerate(PAR):        
+        # add lesiones_fname (if exists)
+        for j,row in enumerate(par['studies']):
+            anon_id = row['anon_id']
+            patient_id = row['patient_id']
+            study_date = row['study_date']        
+            dir = os.path.join(datadir,anon_id,'derivatives','ENTELAI')
+            if not os.path.exists(dir):
+                lesiones_fname = ""
+            else:
+                dirname = os.listdir(dir)[0]
+                lesiones_fname = os.listdir(os.path.join(dir,dirname))[0]
+                lesiones_fname = os.path.join(dir,dirname,lesiones_fname)
+            PAR[i]['studies'][j]['lesiones_fname'] = lesiones_fname
+
+        # add flair_fname (if exists)
+        anon_id = par['studies'][1]['anon_id'] # flair files are in chronologically last folder
+        dir = os.path.join(datadir,anon_id)
+        if not os.path.exists(dir):
+            flair_fname_0 = ""
+            flair_fname_1 = ""
+        else:
+            dirnames = os.listdir(dir)
+            dirname = [x for x in dirnames if x.startswith('sub-adhocrun-')]
+            dir = os.path.join(dir,dirname[0])
+            files = os.listdir(dir)
+            flair_fname_0 = [x for x in files if x.endswith('flair_coreg-t1-prev_1mm.nii.gz')][0]
+            flair_fname_0 = os.path.join(dir,flair_fname_0)        
+            flair_fname_1 = [x for x in files if x.endswith('flair_coreg-t1_1mm.nii.gz')][0]
+            flair_fname_1 = os.path.join(dir,flair_fname_1)        
+        PAR[i]['studies'][0]['FLAIR_fname'] = flair_fname_0
+        PAR[i]['studies'][1]['FLAIR_fname'] = flair_fname_1
+
+    # Add comment
+    df = pd.read_excel(os.path.join(datadir,'false_positives_neuro_desm.xlsx'),sheet_name="Comentarios")
+    for i,par in enumerate(PAR):                
+        comment = df[df['patient_id']==int(par['studiesname'])]['comment'].values[0]
+        PAR[i]['comment'] = comment
+
+    return PAR
+
+def build_PAR_20(datadir): # dataset 20 longitudinal
     
     xls = pd.ExcelFile(os.path.join(datadir,'listado 20.xlsx'))
     ST = pd.read_excel(xls, 'Hoja1')
@@ -41,12 +108,12 @@ def build_PAR_20(datadir):
         st2['lesiones_fname'] = os.path.join(datadir, folder, 'lesionseg-cor01.nii.gz')
 
         par['studies'] = [st1, st2]
+        par['comment'] = ''
     
         PAR.append(par)
     return PAR
 
-
-def build_structure_ST(datadir):
+def build_structure_ST_6x4(datadir): # dataset 6x4
     """
     Build a list of dictionaries with info of each study (Image)
     Parameters
@@ -60,7 +127,7 @@ def build_structure_ST(datadir):
 
     """
 
-    xls = pd.ExcelFile('Protocolo 50-18 FLENI Entelai.xlsx')
+    xls = pd.ExcelFile(os.path.join(datadir,'Protocolo 50-18 FLENI Entelai.xlsx'))
     ST = pd.read_excel(xls, 'estudios')
     xls.close()
     T1_fname = []
@@ -86,8 +153,7 @@ def build_structure_ST(datadir):
     ST['lesiones_fname'] = lesiones_fname
     return ST
 
-
-def build_pairs_of_studies(ST):
+def build_pairs_of_studies_6x4(ST): # dataset 6x4
     """
     Builds a list of dictionaries with all possible combinations of studies
     Parameters
@@ -142,12 +208,11 @@ def build_pairs_of_studies(ST):
                 st1['subject'], st1['visita'], st1['AB'],
                 st2['subject'], st2['visita'], st2['AB'], reso
                 )
-
+            par['comment'] = ""
             PAR.append(par)
     return PAR
 
-
-def full_process_pair(par, outdatadir, param):
+def full_process_pair(par, outdatadir, param): # todos los datasets
     filename1 =  par['studies'][0]['lesiones_fname']
     filename2 =  par['studies'][1]['lesiones_fname']
     img1 = sitk.ReadImage(filename1)
@@ -223,7 +288,6 @@ def small_lesion_filter(maxsize, data):
             data['array'][labels == indlabel + 1] = False
     return data
 
-
 def export_new_resolving(par, outdatadir, param):
     fcn_classify_lesions = param['fcn_classify_lesions']
     condname = param['condname']
@@ -281,7 +345,6 @@ def export_new_resolving(par, outdatadir, param):
         filename = "labels %d (n%d, r%d, sm%d, g%d, st%d).nii.gz" % (inds+1, n1, n2, n3, n4, n5)
         sitk.WriteImage(imgoverlay, os.path.join(outdatadir, foldername, condname, filename))
 
-
 def copy_flair_lesions(par, outdatadir):
     foldername = par['studiesname']
     os.makedirs(os.path.join(outdatadir, foldername), exist_ok=True)
@@ -303,7 +366,6 @@ def copy_flair_lesions(par, outdatadir):
                                 os.path.join(outdatadir, foldername,
                                              'lesiones_2.nii.gz'))
     os.system(mystr)
-
 
 def figure_vol_vs_vol(v1, v2, param,log=False):
     umbral = param['thres']
@@ -450,7 +512,6 @@ def export_vol_vs_vol(par, outdatadir, param):
     os.makedirs(os.path.join(outdatadir, 'imagenes'), exist_ok=True)
     plt.savefig(os.path.join(outdatadir, 'imagenes', filename), dpi=150)
 
-
 def export_labels(par, outdatadir):    
     for inds, study in enumerate(par['studies']):
         labels = study['labels']   
@@ -463,7 +524,6 @@ def export_labels(par, outdatadir):
         filename = "labels_%d_(total=%d).nii.gz" % (inds+1, numlabels)
         sitk.WriteImage(imgoverlay, os.path.join(outdatadir, foldername,
                                                  filename))
-
 
 def export_LVTM(par, outdatadir, param):        
     LVTM = list(par['LVTM'])
@@ -481,15 +541,10 @@ def export_LVTM(par, outdatadir, param):
     condname = param['condname']
     fname = os.path.join(outdatadir, par['studiesname'], condname, 'volumes.xlsx')
     df.to_excel(fname, index=False)
-    
-    # fname = os.path.join(outdatadir, par['studiesname'], 'volumes.csv')
-    # np.savetxt(fname, LVTM, delimiter=',', fmt='%d', header='id,v1,v2')
-
 
 def list_intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]
     return lst3
-
 
 def resnewconsep(rawLLTM):
     """
