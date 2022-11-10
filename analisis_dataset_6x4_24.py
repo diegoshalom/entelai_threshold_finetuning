@@ -83,10 +83,10 @@ def extract_vp_dvp(PAR,samereso):
 
     zipped = list(zip(vp,dvp,vol1,vol2))
     res = sorted(zipped, key = lambda x: x[0])
-    vp = [item[0] for item in res ]
-    dvp = [item[1] for item in res ]
-    vol1 = [item[2] for item in res ]
-    vol2 = [item[3] for item in res ]
+    vp = [item[0] for item in res ] # Volumen promedio
+    dvp = [item[1] for item in res ] # porcentaje de cambio
+    vol1 = [item[2] for item in res ] # Vol1
+    vol2 = [item[3] for item in res ] # Vol2
 
     return vp,dvp,vol1,vol2
 

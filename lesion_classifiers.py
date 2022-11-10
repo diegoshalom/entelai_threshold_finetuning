@@ -1,5 +1,57 @@
 import numpy as np
 
+def _classify_lesions_6tau_samereso(v1, v2):
+    """
+    Classify lesions in grow/new and stable, according to vol1 and vol2
+    Parameters
+    ----------
+    v1, v2: lists of volumes of lesions an timepoints 1 and 2
+
+    Returns
+    -------
+    index: a dictionary of classes of lesions. Each one is a list of boolean:
+        -grow: Growing/New
+        -stable: Stable
+    """    
+    indexres = (v1 < 0) #always false
+    indexsmall = (v1 < 0) #always false
+    indexnew = (v1==0) & (v2>30) #always false
+    indexcor = ~(indexres | indexnew | indexsmall)    
+    indexgrow = indexcor & ((v1<65) & (v2>v1*1.1554+30) |
+                            (v1>=65) & (v2>v1*1.61692) |
+                            ((v1==0) & (v2>=30)))
+    indexstable = indexcor & ~(indexgrow)
+
+    index ={'grow': indexgrow, 'stable': indexstable, 'new': indexnew}
+
+    return index    
+
+def _classify_lesions_6tau_diffreso(v1, v2):
+    """
+    Classify lesions in grow/new and stable, according to vol1 and vol2
+    Parameters
+    ----------
+    v1, v2: lists of volumes of lesions an timepoints 1 and 2
+
+    Returns
+    -------
+    index: a dictionary of classes of lesions. Each one is a list of boolean:
+        -grow: Growing/New
+        -stable: Stable
+    """    
+    indexres = (v1 < 0) #always false
+    indexsmall = (v1 < 0) #always false
+    indexnew = (v1==0) & (v2>30) #always false
+    indexcor = ~(indexres | indexnew | indexsmall)    
+    indexgrow = indexcor & ((v1<77) & (v2>v1*2.22703+30) |
+                            (v1>=77) & (v2>v1*2.61664) |
+                            ((v1==0) & (v2>=30)))
+    indexstable = indexcor & ~(indexgrow)
+
+    index ={'grow': indexgrow, 'stable': indexstable, 'new': indexnew}
+    
+    return index
+
 def _classify_lesions_6SD(v1, v2, thres, slope):
     """
     Classify lesions in grow/new and stable, according to vol1 and vol2
@@ -23,6 +75,31 @@ def _classify_lesions_6SD(v1, v2, thres, slope):
     indexcor = np.bitwise_not(indexres | indexnew | indexsmall)    
     
     indexgrow = indexcor & (np.bitwise_and(v1<65, v2>v1*slopelow+thresnew) | np.bitwise_and(v1>=65, v2>v1*slopehigh) )
+    indexstable = indexcor & np.bitwise_not(indexgrow)
+
+    # index ={'grow': indexgrow, 'stable': indexstable}
+    index ={'res': indexres, 'new': indexnew, 'small': indexsmall,
+              'grow': indexgrow, 'stable': indexstable}    
+    return index
+
+def _classify_lesions_4tau_samereso(v1, v2):
+    """
+    Classify lesions in grow/new and stable, according to vol1 and vol2
+    Parameters
+    ----------
+    v1, v2: lists of volumes of lesions an timepoints 1 and 2
+
+    Returns
+    -------
+    index: a dictionary of classes of lesions. Each one is a list of boolean:
+        -grow: Growing/New
+        -stable: Stable
+    """    
+    indexres = (v1 < 0) #always false
+    indexsmall = (v1 < 0) #always false
+    indexnew = (v1 <  0) #always false
+    indexcor = np.bitwise_not(indexres | indexnew | indexsmall)    
+    indexgrow = indexcor & (np.bitwise_and(v1<65, v2>v1*1.02104+25.365) | np.bitwise_and(v1>=65, v2>v1*1.41127) | ((v1==0) & (v2 > 17.6)))
     indexstable = indexcor & np.bitwise_not(indexgrow)
 
     # index ={'grow': indexgrow, 'stable': indexstable}
